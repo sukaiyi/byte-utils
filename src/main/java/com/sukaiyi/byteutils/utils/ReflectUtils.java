@@ -34,6 +34,26 @@ public class ReflectUtils {
         return null;
     }
 
+    public static void setFieldValue(Object ins, String field, Object value) {
+        Class<?> clazz = ins.getClass();
+        try {
+            Field f = clazz.getDeclaredField(field);
+            f.setAccessible(true);
+            f.set(ins, value);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void setFieldValue(Object ins, Field field, Object value) {
+        try {
+            field.setAccessible(true);
+            field.set(ins, value);
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+    }
+
     public static <T> T newInstance(Class<T> clazz) {
         try {
             return clazz.newInstance();

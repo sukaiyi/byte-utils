@@ -12,9 +12,13 @@ import java.util.Map;
 public interface Block<T> {
 
     /**
-     * @return 用于肉眼识别的名字，目前没用到
+     * 数据块名称
+     *
+     * @return 用于肉眼识别的名字
      */
-    String name();
+    default String name() {
+        return this.getClass().getName();
+    }
 
     /**
      * 该数据块的大小， 可以根据已经读取的数据块计算
@@ -22,7 +26,7 @@ public interface Block<T> {
      * @param blockAlreadyDecode 已经读取到的数据块
      * @return 该数据块的大小
      */
-    long size(Map<Class<?>, Block<?>> blockAlreadyDecode);
+    long size(Map<Class<?>, List<Block<?>>> blockAlreadyDecode);
 
     /**
      * 解析该数据块的内容，当数据块比较长时，可能会多次回调这个方法
@@ -34,7 +38,7 @@ public interface Block<T> {
      * @param len                数据长度
      * @param finished           该数据块是否已经读取完了
      */
-    void decode(Map<Class<?>, Block<?>> blockAlreadyDecode, byte[] bytes, int start, int len, boolean finished);
+    void decode(Map<Class<?>, List<Block<?>>> blockAlreadyDecode, byte[] bytes, int start, int len, boolean finished);
 
     /**
      * @return 该数据块解析出的数据
@@ -49,5 +53,5 @@ public interface Block<T> {
      * @return 下一个读取的数据块
      */
     @SuppressWarnings("all")
-    Class<? extends Block> next(Map<Class<?>, Block<?>> blockAlreadyDecode, List ret);
+    Class<? extends Block> next(Map<Class<?>, List<Block<?>>> blockAlreadyDecode, List ret);
 }

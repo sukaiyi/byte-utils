@@ -3,6 +3,7 @@ package com.sukaiyi.byteutils.analyzer;
 import com.sukaiyi.byteutils.utils.MathUtils;
 import com.sukaiyi.byteutils.utils.ReflectUtils;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,19 +20,30 @@ public abstract class AbstractStateBasedFileAnalyzer<T> extends BaseByteAnalyzer
         analyzeState.buff = new byte[1024];
         return analyzeState;
     });
-    private final ThreadLocal<Map<Class<?>, Block<?>>> blockAlreadyDecodeLocal = ThreadLocal.withInitial(HashMap::new);
+    private final ThreadLocal<Map<Class<?>, List<Block<?>>>> blockAlreadyDecodeLocal = ThreadLocal.withInitial(HashMap::new);
 
     @Override
     @SuppressWarnings("all")
     protected void decode(byte[] bytes, int count, List<T> result) {
         AnalyzeState analyzeState = analyzeStateLocal.get();
-        Map<Class<?>, Block<?>> blockAlreadyDecode = blockAlreadyDecodeLocal.get();
+        Map<Class<?>, List<Block<?>>> blockAlreadyDecode = blockAlreadyDecodeLocal.get();
+        if (count <= 0) {
+            analyzeState.block = null;
+            analyzeState.state = initState();
+            analyzeState.bufPos = 0;
+            analyzeState.read = 0L;
+            analyzeState.size = 0L;
+            blockAlreadyDecode.clear();
+        }
         for (int i = 0; i < count; ) {
             Class<? extends Block> state = analyzeState.state;
-            Block block = blockAlreadyDecode.get(state);
+            if (state == null) {
+                break;
+            }
+            Block<?> block = analyzeState.block;
             if (block == null) {
                 block = ReflectUtils.newInstance(state);
-                blockAlreadyDecode.put(state, block);
+                blockAlreadyDecode.computeIfAbsent(state, key -> new ArrayList<>()).add(block);
                 analyzeState.size = block.size(blockAlreadyDecode);
                 analyzeState.read = 0L;
                 analyzeState.bufPos = 0;
@@ -58,6 +70,7 @@ public abstract class AbstractStateBasedFileAnalyzer<T> extends BaseByteAnalyzer
                     block.decode(blockAlreadyDecode, analyzeState.buff, 0, analyzeState.bufPos, true);
                     analyzeState.bufPos = 0;
                     analyzeState.state = block.next(blockAlreadyDecode, result);
+                    analyzeState.block = null;
                 } else if (analyzeState.buff.length - analyzeState.bufPos == 0) { // 缓冲区满了
                     block.decode(blockAlreadyDecode, analyzeState.buff, 0, analyzeState.bufPos, false);
                     analyzeState.bufPos = 0;
@@ -72,6 +85,7 @@ public abstract class AbstractStateBasedFileAnalyzer<T> extends BaseByteAnalyzer
     @SuppressWarnings("all")
     private static final class AnalyzeState {
         private Class<? extends Block> state;
+        private Block<?> block;
         private byte[] buff;
         private Integer bufPos = 0;
         private Long read; // 已经读取的字节数
