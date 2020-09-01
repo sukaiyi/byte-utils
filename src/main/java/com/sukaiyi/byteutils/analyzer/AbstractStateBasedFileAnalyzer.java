@@ -47,6 +47,7 @@ public abstract class AbstractStateBasedFileAnalyzer<T> extends BaseByteAnalyzer
                 analyzeState.size = block.size(blockAlreadyDecode);
                 analyzeState.read = 0L;
                 analyzeState.bufPos = 0;
+                analyzeState.block = block;
             }
             long left = analyzeState.size - analyzeState.read;
             if (left > analyzeState.buff.length) { // 如果剩余未读字节数大于了缓冲区大小，就不拷贝到缓冲区
@@ -56,6 +57,7 @@ public abstract class AbstractStateBasedFileAnalyzer<T> extends BaseByteAnalyzer
                 if (analyzeState.read - analyzeState.size == 0) { // 数读取完了
                     block.decode(blockAlreadyDecode, bytes, i - read, read, true);
                     analyzeState.state = block.next(blockAlreadyDecode, result);
+                    analyzeState.block = null;
                 } else {
                     block.decode(blockAlreadyDecode, bytes, i - read, read, false);
                 }
