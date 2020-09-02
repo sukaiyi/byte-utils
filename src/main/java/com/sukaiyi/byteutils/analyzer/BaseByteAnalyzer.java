@@ -49,6 +49,11 @@ public abstract class BaseByteAnalyzer<T> {
         return ts;
     }
 
+    public List<T> exec(byte[] bytes) {
+        InputStream is = new ByteArrayInputStream(bytes);
+        return exec(is);
+    }
+
     /**
      * 将 bytes 解析为对象
      *
